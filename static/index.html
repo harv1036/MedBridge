@@ -1916,6 +1916,7 @@
     if (viewId === 'documents') loadDocumentsView();
     if (viewId === 'concurrency') populateLabSelects();
     if (viewId === 'audit') loadAuditTable();
+    if (viewId === 'patients') updatePatientCardsUI();
   }
 
   // Quick fill helper for the demo
@@ -1952,7 +1953,44 @@
   }
 
   // Update Overview Dashboard
+  // Patients tab: one card per patient with their differences
+  function updatePatientCardsUI() {
+    const grid = document.getElementById('patient-cards-grid');
+    if (!grid) return;
+    grid.innerHTML = state.patients.map(p => {
+      const items = state.queue.filter(q => q.patient_id === p.id);
+      const rows = items.map(q => `
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 0; border-top:1px solid var(--border-subtle);">
+          <span><strong style="text-transform:capitalize;">${esc(q.drug_norm)}</strong>
+            <span style="color:var(--text-muted); font-size:12px;">${esc(q.type.replace(/_/g, ' ').toLowerCase())}</span></span>
+          <span style="display:flex; gap:6px;">
+            <span class="badge ${q.gate_decision === 'READY' ? 'badge-ready' : 'badge-abstain'}">${q.gate_decision === 'READY' ? 'READY' : 'ABSTAIN'}</span>
+            <span class="badge badge-${esc(q.status)}">${esc(q.status)}</span>
+          </span>
+        </div>`).join('') || '<div style="color:var(--text-muted); font-size:13px; padding:8px 0;">No differences found.</div>';
+      return `
+        <div style="background:#fff; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:18px 20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="font-size:15px;">${esc(p.name)}</strong>
+            <span class="badge badge-code">Patient #${p.id}</span>
+          </div>
+          <div style="font-size:12.5px; color:var(--text-secondary); margin:6px 0 10px;">${esc(p.scenario)}</div>
+          ${rows}
+          <div style="display:flex; gap:8px; margin-top:12px;">
+            <button class="btn btn-primary btn-sm" onclick="openPatientWorkspace(${p.id})">Open in Review Queue</button>
+            <button class="btn btn-outline btn-sm" onclick="openPatientView(${p.id})">Patient View</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function openPatientView(patientId) {
+    document.getElementById('patient-view-select').value = String(patientId);
+    navigateTo('patient-view');
+  }
+
   function updateOverviewUI() {
+    updatePatientCardsUI();
     document.getElementById('stat-active-count').textContent = state.queue.length;
     const abstainCount = state.queue.filter(q => q.gate_decision === 'ABSTAIN').length;
     const resolvedCount = state.queue.filter(q => q.status === 'resolved').length;
