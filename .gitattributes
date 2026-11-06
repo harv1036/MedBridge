@@ -4,3 +4,4 @@ data/drug_master.csv -text
 
 # Shell scripts must keep LF or bash rejects them.
 *.sh text eol=lf
+*.pdf binary
