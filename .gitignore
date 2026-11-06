@@ -1,5 +1,29 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
-data/medbridge.db*
-.claude/settings.local.json
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Local database: seed.py rebuilds it, and it holds demo data and audit rows
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.db-journal
+*.sqlite*
+
+# Secrets and local tool settings
+.env
+.env.*
+*.pem
+*.key
+.claude/
+
+# Editors, OS, logs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
