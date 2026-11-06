@@ -1,3 +1,6 @@
 # Source data stays byte-exact on every checkout: a document's sha256 depends on it.
 data/docs/*.txt -text
 data/drug_master.csv -text
+
+# Shell scripts must keep LF or bash rejects them.
+*.sh text eol=lf
