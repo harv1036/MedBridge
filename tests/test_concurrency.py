@@ -410,6 +410,16 @@ def test_every_attempt_is_audited_and_the_chain_stays_valid(client, claimed_item
     assert client.get("/audit/verify").json() == {"valid": True}
 
 
+def test_audit_list_is_newest_first_and_includes_rejected_attempts(client, claimed_item):
+    claim(client, claimed_item, "pharmacist_b")
+    rows = client.get("/audit").json()
+    assert [row["action"] for row in rows[:2]] == ["claim_rejected", "claim"]
+    assert [row["id"] for row in rows] == sorted((row["id"] for row in rows), reverse=True)
+    assert rows[0]["actor"] == "pharmacist_b"
+    assert rows[0]["prev_hash"] == rows[1]["hash"]
+    assert len(client.get("/audit?limit=1").json()) == 1
+
+
 def test_an_empty_audit_log_is_valid(client):
     assert client.get("/audit/verify").json() == {"valid": True}
 

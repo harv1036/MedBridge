@@ -311,6 +311,17 @@ def get_patient_view(patient_id: int):
 # ----- Audit and admin -----
 
 
+@router.get("/audit")
+def audit_list(limit: int = 200):
+    """The log, newest first, for the Audit tab."""
+    with closing(connect()) as conn:
+        rows = conn.execute(
+            "SELECT id, ts, actor, action, entity, payload, prev_hash, hash FROM audit_log ORDER BY id DESC LIMIT ?",
+            (max(1, min(limit, 1000)),),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+
 @router.get("/audit/verify")
 def audit_verify():
     with closing(connect()) as conn:

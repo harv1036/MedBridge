@@ -1,0 +1,2780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedBridge — Safe Medication Handover</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-lavender: #EDE7FA;
+      --workspace-white: #FFFFFF;
+      --primary-purple: #7C4DFF;
+      --primary-purple-hover: #6C3AE8;
+      --primary-purple-active: #5B27D4;
+      --light-purple: #F3EDFF;
+      --light-purple-border: #E2D4F7;
+      --text-main: #252233;
+      --text-secondary: #746F82;
+      --text-muted: #9E99AA;
+      --border-subtle: #ECE8F2;
+      --border-hover: #D7D0E3;
+      --surface-subtle: #FAF9FC;
+      
+      --success-green: #10B981;
+      --success-green-bg: #ECFDF5;
+      --success-green-border: #A7F3D0;
+      --success-green-text: #065F46;
+      
+      --warning-amber: #F59E0B;
+      --warning-amber-bg: #FFFBEB;
+      --warning-amber-border: #FDE68A;
+      --warning-amber-text: #92400E;
+      
+      --danger-red: #EF4444;
+      --danger-red-bg: #FEF2F2;
+      --danger-red-border: #FECACA;
+      --danger-red-text: #991B1B;
+
+      --info-blue: #3B82F6;
+      --info-blue-bg: #EFF6FF;
+      --info-blue-border: #BFDBFE;
+      --info-blue-text: #1E40AF;
+
+      --shadow-sm: 0 1px 3px rgba(37, 34, 51, 0.04), 0 1px 2px rgba(37, 34, 51, 0.02);
+      --shadow-md: 0 4px 16px rgba(124, 77, 255, 0.08), 0 2px 6px rgba(37, 34, 51, 0.03);
+      --shadow-lg: 0 10px 30px rgba(124, 77, 255, 0.12), 0 4px 12px rgba(37, 34, 51, 0.05);
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-xl: 22px;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-lavender);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Subtle animation keyframes */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulseSoft {
+      0% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.04); opacity: 1; }
+      100% { transform: scale(1); opacity: 0.9; }
+    }
+
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 0 rgba(124, 77, 255, 0.3); }
+      70% { box-shadow: 0 0 0 8px rgba(124, 77, 255, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(124, 77, 255, 0); }
+    }
+
+    #app-container {
+      display: flex;
+      width: 100vw;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    aside.sidebar {
+      width: 250px;
+      background: #FAF8FD;
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      padding: 24px 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 8px 24px 8px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 20px;
+    }
+
+    .brand-logo-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--primary-purple), #A47DFF);
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(124, 77, 255, 0.28);
+      transition: transform 0.2s ease;
+    }
+
+    .brand-logo-icon:hover {
+      transform: scale(1.05) rotate(-2deg);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-subtitle {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--primary-purple);
+      margin-top: -2px;
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      list-style: none;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .nav-item:hover {
+      background: #F3EDFF80;
+      color: var(--primary-purple);
+      transform: translateX(3px);
+    }
+
+    .nav-item.active {
+      background: var(--light-purple);
+      color: var(--primary-purple);
+      box-shadow: 0 2px 8px rgba(124, 77, 255, 0.08);
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      bottom: 6px;
+      width: 4px;
+      background: var(--primary-purple);
+      border-radius: 0 4px 4px 0;
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--primary-purple);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+      line-height: 1.2;
+    }
+
+    .sidebar-footer {
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 11.5px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .system-health-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .status-dot-pulse {
+      width: 8px;
+      height: 8px;
+      background: var(--success-green);
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+
+    /* Main Area */
+    main.main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding: 20px 24px 32px 24px;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    /* Top Header */
+    header.top-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 16px;
+    }
+
+    .header-left h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .header-left p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .actor-selector-wrapper {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 5px 8px 5px 12px;
+      gap: 8px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+
+    .actor-selector-wrapper:hover {
+      border-color: var(--primary-purple);
+    }
+
+    .actor-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .actor-select {
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary-purple);
+      cursor: pointer;
+      padding-right: 4px;
+    }
+
+    .actor-avatar {
+      width: 28px;
+      height: 28px;
+      background: var(--light-purple);
+      color: var(--primary-purple);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 11.5px;
+      border: 1px solid var(--light-purple-border);
+    }
+
+    .btn-header-secondary {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      border: 1px solid var(--border-subtle);
+      padding: 8px 13px;
+      border-radius: var(--radius-md);
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-header-secondary:hover {
+      border-color: var(--primary-purple);
+      color: var(--primary-purple);
+      transform: translateY(-1px);
+    }
+
+    .live-polling-tag {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      padding: 7px 12px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .polling-beacon {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--primary-purple);
+      animation: pulseSoft 2s infinite ease-in-out;
+    }
+
+    /* Large White Workspace */
+    .workspace-card {
+      background: var(--workspace-white);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    /* Views */
+    .view-panel {
+      display: none;
+      flex-direction: column;
+      gap: 22px;
+      animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .view-panel.active-view {
+      display: flex;
+    }
+
+    /* Stats Row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+      border-color: var(--light-purple-border);
+    }
+
+    .stat-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-value {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text-main);
+    }
+
+    .stat-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Table Styles */
+    .table-container {
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: #fff;
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    table.data-table th {
+      background: var(--surface-subtle);
+      padding: 13px 16px;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    table.data-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 13.5px;
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    table.data-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    table.data-table tbody tr {
+      transition: background 0.15s ease;
+    }
+
+    table.data-table tbody tr:hover {
+      background: #FAF8FD;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      transition: all 0.2s ease;
+    }
+
+    .badge-ready {
+      background: var(--success-green-bg);
+      color: var(--success-green-text);
+      border: 1px solid var(--success-green-border);
+    }
+
+    .badge-abstain {
+      background: var(--warning-amber-bg);
+      color: var(--warning-amber-text);
+      border: 1px solid var(--warning-amber-border);
+    }
+
+    .badge-open {
+      background: #F3F4F6;
+      color: #4B5563;
+      border: 1px solid #E5E7EB;
+    }
+
+    .badge-claimed {
+      background: var(--light-purple);
+      color: var(--primary-purple);
+      border: 1px solid var(--light-purple-border);
+    }
+
+    .badge-resolved {
+      background: var(--success-green-bg);
+      color: var(--success-green-text);
+      border: 1px solid var(--success-green-border);
+    }
+
+    .badge-code {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: #F1F0F5;
+      color: var(--text-main);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    /* Buttons with smooth tactile feel */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: inherit;
+      user-select: none;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: var(--primary-purple);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(124, 77, 255, 0.2);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-purple-hover);
+      box-shadow: 0 4px 14px rgba(124, 77, 255, 0.35);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      background: var(--primary-purple-active);
+    }
+
+    .btn-outline {
+      background: #fff;
+      border-color: var(--border-subtle);
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-outline:hover:not(:disabled) {
+      border-color: var(--primary-purple);
+      color: var(--primary-purple);
+      background: var(--light-purple);
+    }
+
+    .btn-success {
+      background: var(--success-green);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #059669;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-sm {
+      padding: 5px 11px;
+      font-size: 12px;
+      border-radius: 6px;
+    }
+
+    .btn-lg {
+      padding: 12px 22px;
+      font-size: 14.5px;
+      border-radius: var(--radius-md);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(0.6);
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    /* STEP GUIDANCE BAR in Discrepancy Investigation */
+    .investigation-step-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      margin-bottom: 6px;
+    }
+
+    .step-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .step-number {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #E8E4F0;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .step-box.active .step-number {
+      background: var(--primary-purple);
+      color: #fff;
+      animation: pulseGlow 2s infinite;
+    }
+
+    .step-box.completed .step-number {
+      background: var(--success-green);
+      color: #fff;
+    }
+
+    .step-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .step-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Record Comparison Side-by-Side */
+    .investigation-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .record-compare-card {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .record-compare-card:hover {
+      border-color: var(--light-purple-border);
+    }
+
+    .record-compare-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 12px;
+    }
+
+    .record-compare-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .field-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .field-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+    }
+
+    .field-val {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .field-val.highlight-diff {
+      color: var(--primary-purple);
+      font-weight: 800;
+      background: var(--light-purple);
+      padding: 2px 8px;
+      border-radius: 5px;
+      display: inline-block;
+      width: fit-content;
+      border: 1px solid var(--light-purple-border);
+    }
+
+    .source-snippet-box {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      color: #4A4657;
+      word-break: break-all;
+    }
+
+    /* Decision Gate Banner (Constraint 12) */
+    .gate-banner {
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 1px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .gate-banner.abstain {
+      background: var(--warning-amber-bg);
+      border-color: var(--warning-amber-border);
+    }
+
+    .gate-banner.ready {
+      background: var(--success-green-bg);
+      border-color: var(--success-green-border);
+    }
+
+    .gate-banner-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .gate-banner-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15.5px;
+      font-weight: 800;
+    }
+
+    .gate-banner.abstain .gate-banner-heading {
+      color: var(--warning-amber-text);
+    }
+
+    .gate-banner.ready .gate-banner-heading {
+      color: var(--success-green-text);
+    }
+
+    .gate-question-box {
+      background: #FFFFFF;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+
+    /* Fact submission form */
+    .fact-form-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .fact-inputs-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1.5fr auto;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-group label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .form-control {
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary-purple);
+      box-shadow: 0 0 0 3px rgba(124, 77, 255, 0.15);
+    }
+
+    /* Quick Fill Buttons (Huge Usability Boost!) */
+    .quick-fill-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      flex-wrap: wrap;
+    }
+
+    .quick-fill-pill {
+      background: var(--light-purple);
+      color: var(--primary-purple);
+      border: 1px solid var(--light-purple-border);
+      padding: 3px 9px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 11.5px;
+      transition: all 0.15s ease;
+    }
+
+    .quick-fill-pill:hover {
+      background: var(--primary-purple);
+      color: #fff;
+    }
+
+    /* Concurrency Lab Cards */
+    .concurrency-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .test-station-card {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .test-station-card:hover {
+      border-color: var(--light-purple-border);
+    }
+
+    .station-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .station-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .results-meter-box {
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      text-align: center;
+    }
+
+    .meter-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .meter-val {
+      font-size: 24px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      transition: color 0.2s ease;
+    }
+
+    .meter-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    .terminal-output {
+      background: #181524;
+      color: #E2DFEB;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      height: 180px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.6;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Toast Notification */
+    #toast-notification {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #252233;
+      color: #fff;
+      padding: 14px 22px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      font-size: 13.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(14px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #toast-notification.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1024px) {
+      .investigation-grid, .concurrency-grid {
+        grid-template-columns: 1fr;
+      }
+      .stats-row {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="app-container">
+  <!-- Slim Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19h16"/>
+          <path d="M4 15h16"/>
+          <path d="M10 3v12"/>
+          <path d="M14 3v12"/>
+          <path d="M7 11h10"/>
+        </svg>
+      </div>
+      <div class="brand-title">
+        MedBridge
+        <span class="brand-subtitle">Safety Handover</span>
+      </div>
+    </div>
+
+    <ul class="nav-menu">
+      <li class="nav-item active" data-view="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+        Overview
+      </li>
+      <li class="nav-item" data-view="queue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Review Queue
+        <span class="nav-badge" id="badge-queue-count">0</span>
+      </li>
+      <li class="nav-item" data-view="patients">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Patients
+      </li>
+      <li class="nav-item" data-view="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Documents
+      </li>
+      <li class="nav-item" data-view="patient-view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12h5l2 8 5-16 2 8h6"/></svg>
+        Patient View
+      </li>
+      <li class="nav-item" data-view="audit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Audit & Security
+      </li>
+      <li class="nav-item" data-view="concurrency">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Concurrency Lab
+      </li>
+      <li class="nav-item" data-view="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Settings & Admin
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="system-health-pill">
+        <div class="status-dot-pulse"></div>
+        <div>
+          <strong style="color:var(--text-main);">SQLite WAL Mode</strong>
+          <div>5,000ms Busy Timeout</div>
+        </div>
+      </div>
+      <div>MedBridge v1.0 • Built for Safety</div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="header-left">
+        <h1 id="page-title">Medication Reconciliation</h1>
+        <p id="page-subtitle">Safe handover & clinical discrepancy review workspace</p>
+      </div>
+
+      <div class="header-actions">
+        <div class="live-polling-tag" title="Queue refreshes every 2 seconds automatically">
+          <div class="polling-beacon"></div>
+          <span>Live 2s Sync</span>
+        </div>
+
+        <button class="btn-header-secondary" id="btn-quick-reset" title="Reset all data to fresh initial seed">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+          Reset Demo
+        </button>
+
+        <div class="actor-selector-wrapper">
+          <span class="actor-label">User:</span>
+          <select class="actor-select" id="actor-select">
+            <option value="pharmacist_a">Pharmacist A</option>
+            <option value="pharmacist_b">Pharmacist B</option>
+            <option value="clinician">Clinician</option>
+          </select>
+          <div class="actor-avatar" id="actor-avatar">PA</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="workspace-card">
+
+      <!-- VIEW 1: OVERVIEW -->
+      <section class="view-panel active-view" id="view-overview">
+        <div class="stats-row">
+          <div class="stat-card" onclick="navigateTo('patients')">
+            <span class="stat-title">Patients Monitored</span>
+            <span class="stat-value" id="stat-patients-count">4</span>
+            <span class="stat-sub">Ravi, Meera, Arjun, Sunita</span>
+          </div>
+          <div class="stat-card" onclick="navigateTo('queue')">
+            <span class="stat-title">Total Differences Found</span>
+            <span class="stat-value" id="stat-active-count" style="color:var(--primary-purple);">0</span>
+            <span class="stat-sub">Across all clinical documents</span>
+          </div>
+          <div class="stat-card" onclick="navigateTo('queue')">
+            <span class="stat-title">Needs Doctor Clarification</span>
+            <span class="stat-value" id="stat-abstain-count" style="color:var(--warning-amber);">0</span>
+            <span class="stat-sub">Rule 12: Missing critical facts</span>
+          </div>
+          <div class="stat-card" onclick="navigateTo('queue')">
+            <span class="stat-title">Approved & Verified</span>
+            <span class="stat-value" id="stat-resolved-count" style="color:var(--success-green);">0</span>
+            <span class="stat-sub">Ready for safe handover</span>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <!-- Patients -->
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="font-size:15px; font-weight:800;">Patients Overview</h3>
+              <button class="btn btn-outline btn-sm" onclick="navigateTo('patients')">View All Patients</button>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Patient</th>
+                    <th>Records</th>
+                    <th>Safety Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-patients-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Quick Queue -->
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="font-size:15px; font-weight:800;">Priority Items for Review</h3>
+              <button class="btn btn-outline btn-sm" onclick="navigateTo('queue')">Open Review Queue</button>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Medicine</th>
+                    <th>Patient</th>
+                    <th>Approval Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-queue-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: REVIEW QUEUE -->
+      <section class="view-panel" id="view-queue">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2 style="font-size:18px; font-weight:800;">Medication Review Queue</h2>
+            <p style="font-size:13px; color:var(--text-secondary);">
+              Review differences between prescriptions. Live updates every 2 seconds.
+            </p>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <select class="form-control" id="filter-queue-status" style="width:170px;">
+              <option value="all">All Differences</option>
+              <option value="open">Unassigned (Open)</option>
+              <option value="claimed">Assigned (In Review)</option>
+              <option value="resolved">Approved (Resolved)</option>
+              <option value="ABSTAIN">Needs Doctor Date/Reason</option>
+              <option value="READY">Ready to Approve</option>
+            </select>
+            <select class="form-control" id="filter-queue-patient" style="width:160px;">
+              <option value="all">All Patients</option>
+              <option value="1">Patient 1: Ravi</option>
+              <option value="2">Patient 2: Meera</option>
+              <option value="3">Patient 3: Arjun</option>
+              <option value="4">Patient 4: Sunita</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Patient</th>
+                <th>Medicine</th>
+                <th>What Changed?</th>
+                <th>Safety Status</th>
+                <th>Who is Reviewing?</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="queue-table-body">
+              <tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">Loading review queue...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- VIEW 3: DISCREPANCY INVESTIGATION WORKSPACE (The Core Experience) -->
+      <section class="view-panel" id="view-discrepancy">
+        <!-- Top Back & Title Bar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <button class="btn btn-outline btn-sm" onclick="navigateTo('queue')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+              Back to Queue
+            </button>
+            <div>
+              <h2 style="font-size:18px; font-weight:800; display:flex; align-items:center; gap:8px;">
+                <span id="disc-header-title">Reviewing Medication Difference</span>
+                <span class="badge badge-code" id="disc-header-type-badge">DOSE_CONFLICT</span>
+              </h2>
+              <span style="font-size:12.5px; color:var(--text-secondary);" id="disc-header-patient-info">Patient: Ravi (ID 1) • Version 1</span>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px;" id="disc-claim-actions-box">
+            <!-- Injected dynamically with Take Responsibility button -->
+          </div>
+        </div>
+
+        <!-- 3-STEP GUIDANCE BAR -->
+        <div class="investigation-step-bar" id="investigation-step-bar">
+          <div class="step-box active" id="step-box-1">
+            <div class="step-number" id="step-num-1">1</div>
+            <div>
+              <div class="step-title" id="step-title-1">Take Responsibility</div>
+              <div class="step-sub" id="step-sub-1">Claim this case to edit</div>
+            </div>
+          </div>
+          <div class="step-box" id="step-box-2">
+            <div class="step-number" id="step-num-2">2</div>
+            <div>
+              <div class="step-title" id="step-title-2">Clarify Missing Info</div>
+              <div class="step-sub" id="step-sub-2">Rule 12: Doctor verification</div>
+            </div>
+          </div>
+          <div class="step-box" id="step-box-3">
+            <div class="step-number" id="step-num-3">3</div>
+            <div>
+              <div class="step-title" id="step-title-3">Approve Dose</div>
+              <div class="step-sub" id="step-sub-3">Handover to patient</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detected Difference Notice -->
+        <div style="background:var(--surface-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px 18px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong style="color:var(--text-main); font-size:13.5px;">Summary:</strong>
+            <span id="disc-detected-desc" style="margin-left:6px; color:var(--text-secondary);">Comparing previous clinic prescription vs new hospital record</span>
+          </div>
+          <span class="badge badge-open" id="disc-classification-badge">Unexplained Change</span>
+        </div>
+
+        <!-- Side-by-side Record Comparison -->
+        <div class="investigation-grid">
+          <!-- Record A -->
+          <div class="record-compare-card" id="card-entry-a">
+            <div class="record-compare-header">
+              <div class="record-compare-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+                Earlier Prescription (Clinic)
+              </div>
+              <span class="badge badge-open" id="entry-a-facility-badge">Sunrise Clinic</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div class="field-row">
+                <span class="field-label">Medicine</span>
+                <span class="field-val" id="entry-a-drug">--</span>
+              </div>
+              <div class="field-row">
+                <span class="field-label">Prescription Date</span>
+                <span class="field-val" id="entry-a-date">--</span>
+              </div>
+              <div class="field-row">
+                <span class="field-label">Prescribed Dose</span>
+                <span class="field-val" id="entry-a-dose">--</span>
+              </div>
+              <div class="field-row">
+                <span class="field-label">Frequency & Route</span>
+                <span class="field-val" id="entry-a-freq-route">--</span>
+              </div>
+              <div class="field-row">
+                <span class="field-label">Prescribing Doctor</span>
+                <span class="field-val" id="entry-a-prescriber">--</span>
+              </div>
+              <div class="field-row">
+                <span class="field-label">Document Match</span>
+                <span class="field-val" id="entry-a-confidence">100% Verified</span>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <span class="field-label">Original Document Line</span>
+              <div class="source-snippet-box" id="entry-a-snippet">--</div>
+            </div>
+          </div>
+
+          <!-- Record B -->
+          <div class="record-compare-card" id="card-entry-b">
+            <div class="record-compare-header">
+              <div class="record-compare-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+                Later Record (Hospital Discharge)
+              </div>
+              <span class="badge badge-open" id="entry-b-facility-badge">City Hospital</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div class="field-row">
+                <span class="field-label">Medicine</span>
+                <span class="field-val" id="entry-b-drug">--</span>
+              </div>
+              <div class="field-row">
+                <span class="field-label">Prescription Date</span>
+                <span class="field-val" id="entry-b-date">--</span>
+              </div>
+              <div class="field-row">
+                <span class="field-label">Prescribed Dose</span>
+                <span class="field-val" id="entry-b-dose">--</span>
+              </div>
+              <div class="field-row">
+                <span class="field-label">Frequency & Route</span>
+                <span class="field-val" id="entry-b-freq-route">--</span>
+              </div>
+              <div class="field-row">
+                <span class="field-label">Prescribing Doctor</span>
+                <span class="field-val" id="entry-b-prescriber">--</span>
+              </div>
+              <div class="field-row">
+                <span class="field-label">Document Match</span>
+                <span class="field-val" id="entry-b-confidence">100% Verified</span>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <span class="field-label">Original Document Line</span>
+              <div class="source-snippet-box" id="entry-b-snippet">--</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONSTRAINT 12 SAFETY GATE BANNER -->
+        <div class="gate-banner abstain" id="gate-decision-banner">
+          <div class="gate-banner-top">
+            <div class="gate-banner-heading">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span id="gate-banner-status-text">Safety Lock: Approval Blocked (Missing Critical Doctor Information)</span>
+            </div>
+            <span class="badge badge-abstain" id="gate-badge-pill">APPROVAL BLOCKED</span>
+          </div>
+
+          <div style="font-size:13.5px; line-height:1.5;" id="gate-missing-facts-desc">
+            To protect the patient, the system refuses to guess. We need: <strong>Hospital Record Date, Reason for Change</strong>
+          </div>
+
+          <div class="gate-question-box" id="gate-question-container">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-purple)" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div>
+              <strong style="color:var(--text-main);">What needs to be clarified:</strong>
+              <div id="gate-question-text" style="margin-top:2px;">Clarifying question will appear here...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FACT SUBMISSION FORM (With Claim Gate & Quick Fill Helpers) -->
+        <div class="fact-form-card" id="box-add-fact">
+          <!-- Unclaimed Warning Notice -->
+          <div id="unclaimed-warning-banner" style="display:none; background:#FFFBEB; border:1px solid #FDE68A; border-radius:var(--radius-sm); padding:12px 16px; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="display:flex; align-items:center; gap:8px; font-weight:700; color:#92400E; font-size:13px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              Step 1 Required: Click "Take Responsibility" before adding doctor clarifications.
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="claimActiveItem()" id="btn-banner-claim-now">
+              👉 Take Responsibility (Claim Now)
+            </button>
+          </div>
+
+          <div style="font-size:14px; font-weight:800; color:var(--text-main); display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-purple)" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Step 2: Add Doctor's Clarification to Unlock Safe Approval
+            </div>
+
+            <!-- 1-Click Quick Fill Helpers -->
+            <div class="quick-fill-bar" id="quick-fill-container">
+              <span>Quick Demo Fill:</span>
+              <span class="quick-fill-pill" onclick="quickFillFact('effective_date_b', '2026-04-20', 'Phone call with Dr Iyer')">
+                + Fill Date (2026-04-20)
+              </span>
+              <span class="quick-fill-pill" onclick="quickFillFact('change_reason', 'Increased due to high blood sugar', 'Dr Iyer confirmed')">
+                + Fill Reason (High sugar)
+              </span>
+            </div>
+          </div>
+
+          <div class="fact-inputs-row" id="fact-inputs-row">
+            <div class="form-group">
+              <label>What information are you adding?</label>
+              <select class="form-control" id="input-fact-name">
+                <option value="effective_date_b">Hospital Prescription Date (YYYY-MM-DD)</option>
+                <option value="change_reason">Reason for Dose Increase/Change</option>
+                <option value="stop_reason">Reason Medicine was Stopped/Omitted</option>
+                <option value="current_intake">Whether Patient is Still Taking It</option>
+                <option value="same_or_separate">Confirmation: Same or Separate Prescription</option>
+                <option value="legible_source">Legible Source Confirmation</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Doctor's Answer / Value</label>
+              <input type="text" class="form-control" id="input-fact-value" placeholder="e.g. 2026-04-20">
+            </div>
+            <div class="form-group">
+              <label>Verified Source (Who confirmed it?)</label>
+              <input type="text" class="form-control" id="input-fact-source" placeholder="e.g. Phone call with Dr Iyer">
+            </div>
+            <button class="btn btn-primary" id="btn-submit-fact" style="height:38px;">
+              Save & Unlock
+            </button>
+          </div>
+        </div>
+
+        <!-- RESOLUTION ACTION BAR (Step 3: Approval) -->
+        <div style="background:#fff; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px; display:flex; flex-direction:column; gap:16px;">
+          <div>
+            <h3 style="font-size:15px; font-weight:800; display:flex; align-items:center; gap:8px;">
+              <span>Step 3: Clinical Decision</span>
+              <span class="badge" id="resolution-lock-badge" style="background:#FEF2F2; color:#991B1B;">Locked until Step 2 is Complete</span>
+            </h3>
+            <p style="font-size:12.5px; color:var(--text-secondary); margin-top:2px;">
+              Accept actions stay disabled until all critical facts are present. Exactly-once version protection prevents double-approval.
+            </p>
+          </div>
+
+          <!-- Buttons Bar -->
+          <div style="display:flex; gap:12px; flex-wrap:wrap;" id="resolution-buttons-container">
+            <!-- Dynamically populated with friendly buttons -->
+          </div>
+
+          <!-- Optional note -->
+          <div class="form-group">
+            <label>Pharmacist Clinical Note (Optional)</label>
+            <input type="text" class="form-control" id="input-resolution-note" placeholder="e.g. Verified with cardiologist discharge summary addendum">
+          </div>
+        </div>
+
+        <!-- Discrepancy History & Audit rows -->
+        <div style="background:var(--surface-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:16px;">
+          <h4 style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:10px; text-transform:uppercase;">
+            Verified Facts & Activity History
+          </h4>
+          <div id="discrepancy-history-log" style="font-size:13px; color:var(--text-main); display:flex; flex-direction:column; gap:8px;">
+            <div style="color:var(--text-muted);">No facts added yet.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: PATIENTS -->
+      <section class="view-panel" id="view-patients">
+        <div>
+          <h2 style="font-size:18px; font-weight:800;">Monitored Patients</h2>
+          <p style="font-size:13px; color:var(--text-secondary);">4 clinical scenarios demonstrating safety, reconciliation, and concurrency rules.</p>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 16px;" id="patient-cards-grid">
+          <!-- Dynamic Patient Cards -->
+        </div>
+      </section>
+
+      <!-- VIEW 5: DOCUMENTS -->
+      <section class="view-panel" id="view-documents">
+        <div>
+          <h2 style="font-size:18px; font-weight:800;">Clinical Prescriptions & Documents</h2>
+          <p style="font-size:13px; color:var(--text-secondary);">Natural uniqueness prevents duplicate uploads using cryptographic SHA-256 matching.</p>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+          <!-- Ingestion Form -->
+          <div style="background:var(--surface-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px; display:flex; flex-direction:column; gap:14px;">
+            <h3 style="font-size:15px; font-weight:800;">Upload New Prescription</h3>
+            <div class="form-group">
+              <label>Patient</label>
+              <select class="form-control" id="upload-doc-patient">
+                <option value="1">Patient 1: Ravi</option>
+                <option value="2">Patient 2: Meera</option>
+                <option value="3">Patient 3: Arjun</option>
+                <option value="4">Patient 4: Sunita</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Prescription Text (UTF-8 Format)</label>
+              <textarea class="form-control" id="upload-doc-content" rows="8" style="font-family:var(--font-mono); font-size:12px;"></textarea>
+            </div>
+            <button class="btn btn-primary" id="btn-upload-document">Upload & Process Prescription</button>
+          </div>
+
+          <!-- Document List -->
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <h3 style="font-size:15px; font-weight:800;">Stored Patient Prescriptions</h3>
+            <div class="table-container" style="max-height:420px; overflow-y:auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Patient</th>
+                    <th>Clinic / Hospital</th>
+                    <th>Date</th>
+                    <th>Doctor</th>
+                  </tr>
+                </thead>
+                <tbody id="documents-table-body">
+                  <!-- Dynamic Document rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 6: PATIENT VIEW -->
+      <section class="view-panel" id="view-patient-view">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h2 style="font-size:18px; font-weight:800;">Patient Medication Handover (Patient's View)</h2>
+            <p style="font-size:13px; color:var(--text-secondary);">
+              Rule 12 Guardrail: Unverified conflicting doses are completely hidden from the patient until verified.
+            </p>
+          </div>
+          <div class="form-group" style="flex-direction:row; align-items:center; gap:8px;">
+            <label style="margin:0; font-size:13px;">Patient:</label>
+            <select class="form-control" id="patient-view-select" style="width:180px;">
+              <option value="1">Patient 1: Ravi</option>
+              <option value="2">Patient 2: Meera</option>
+              <option value="3">Patient 3: Arjun</option>
+              <option value="4">Patient 4: Sunita</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="background:var(--surface-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:24px; display:flex; flex-direction:column; gap:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h3 style="font-size:17px; font-weight:800;" id="pv-patient-name">Ravi's Medication Handover List</h3>
+              <span style="font-size:12.5px; color:var(--text-secondary);" id="pv-patient-sub">Patient ID #1</span>
+            </div>
+            <span class="badge badge-code">Patient Safety Guardrail Active</span>
+          </div>
+
+          <div id="patient-view-meds-container" style="display:flex; flex-direction:column; gap:12px;">
+            <!-- Dynamically populated from /patients/{id}/patient-view -->
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 7: AUDIT & SECURITY -->
+      <section class="view-panel" id="view-audit">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h2 style="font-size:18px; font-weight:800;">Tamper-Proof Audit Chain</h2>
+            <p style="font-size:13px; color:var(--text-secondary);">
+              Mini-blockchain: every action is linked to the previous action using cryptographic SHA-256 hashes.
+            </p>
+          </div>
+          <button class="btn btn-primary" id="btn-verify-audit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+            Verify Safety Chain
+          </button>
+        </div>
+
+        <div id="audit-verification-banner" style="display:none; padding:16px 20px; border-radius:var(--radius-md); font-weight:700;"></div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Pharmacist / Actor</th>
+                <th>Action Taken</th>
+                <th>Patient / Item</th>
+                <th>Audit Details</th>
+              </tr>
+            </thead>
+            <tbody id="audit-log-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- VIEW 8: CONCURRENCY LAB (Constraint 9 Proof) -->
+      <section class="view-panel" id="view-concurrency">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h2 style="font-size:18px; font-weight:800; display:flex; align-items:center; gap:8px;">
+              Concurrency Stress Lab
+              <span class="badge badge-code" style="background:var(--primary-purple); color:#fff;">Constraint 9 Live Proof</span>
+            </h2>
+            <p style="font-size:13px; color:var(--text-secondary);">
+              Live proof: what happens when N users click Claim on the same item at the same instant?
+            </p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="quickReset()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            Reset Test Data
+          </button>
+        </div>
+
+        <div class="concurrency-grid">
+          <!-- Station 1: 20 Simultaneous Claims -->
+          <div class="test-station-card">
+            <div class="station-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-purple)" stroke-width="2.2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+              Test 1: N Simultaneous Claims
+            </div>
+            <div class="station-desc">
+              Fires 20 simultaneous HTTP POST claims using browser <code style="font-family:var(--font-mono);">Promise.all</code> from 20 different simulated users (<code style="font-family:var(--font-mono);">user_1</code> through <code style="font-family:var(--font-mono);">user_20</code>).
+            </div>
+
+            <div class="form-group">
+              <label>Target Discrepancy</label>
+              <select class="form-control" id="lab-claim-target"></select>
+            </div>
+            <div class="form-group">
+              <label>N (number of simultaneous claims)</label>
+              <input class="form-control" type="number" id="lab-claim-n" value="20" min="2" max="200">
+            </div>
+
+            <button class="btn btn-primary btn-lg" id="btn-run-simultaneous-claims" style="width:100%;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Run N Simultaneous Claims
+            </button>
+
+            <div class="results-meter-box">
+              <div class="meter-item">
+                <span class="meter-val" id="meter-claim-total" style="color:var(--text-main);">0</span>
+                <span class="meter-label">Total Sent</span>
+              </div>
+              <div class="meter-item">
+                <span class="meter-val" id="meter-claim-success" style="color:var(--success-green);">0</span>
+                <span class="meter-label">200 Winner</span>
+              </div>
+              <div class="meter-item">
+                <span class="meter-val" id="meter-claim-conflict" style="color:var(--danger-red);">0</span>
+                <span class="meter-label">409 Blocked</span>
+              </div>
+            </div>
+
+            <div class="terminal-output" id="term-claim-log">Ready. Click the button above to run test...</div>
+          </div>
+
+          <!-- Station 2: 10 Duplicate Submits -->
+          <div class="test-station-card">
+            <div class="station-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-purple)" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              Test 2: N Identical Submissions
+            </div>
+            <div class="station-desc">
+              Claims the item once as pharmacist_a, then sends the identical resolve request N times with the same Idempotency-Key. Exactly one resolution row must exist afterwards; every other response is a stored replay.
+            </div>
+
+            <div class="form-group">
+              <label>Target Item (claimed as pharmacist_a for this test)</label>
+              <select class="form-control" id="lab-idemp-target"></select>
+            </div>
+            <div class="form-group">
+              <label>N (number of identical submissions)</label>
+              <input class="form-control" type="number" id="lab-idemp-n" value="20" min="2" max="200">
+            </div>
+
+            <button class="btn btn-primary btn-lg" id="btn-run-idempotency-test" style="width:100%;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Run N Identical Submissions
+            </button>
+
+            <div class="results-meter-box">
+              <div class="meter-item">
+                <span class="meter-val" id="meter-idemp-total" style="color:var(--text-main);">0</span>
+                <span class="meter-label">Total Sent</span>
+              </div>
+              <div class="meter-item">
+                <span class="meter-val" id="meter-idemp-first" style="color:var(--success-green);">0</span>
+                <span class="meter-label">Identical Responses</span>
+              </div>
+              <div class="meter-item">
+                <span class="meter-val" id="meter-idemp-replays" style="color:var(--info-blue);">0</span>
+                <span class="meter-label">Resolution Rows Now</span>
+              </div>
+            </div>
+
+            <div class="terminal-output" id="term-idemp-log">Ready. Click the button above to run test...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 9: SETTINGS & ADMIN -->
+      <section class="view-panel" id="view-settings">
+        <h2 style="font-size:18px; font-weight:800;">System Settings & Reset</h2>
+        <div style="background:var(--surface-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px; display:flex; flex-direction:column; gap:16px;">
+          <div>
+            <h3 style="font-size:15px; font-weight:800;">Reset Demo to Factory State</h3>
+            <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">
+              Re-executes the database seed in an atomic SQLite transaction. Rebuilds the 4 patients and 8 documents instantly.
+            </p>
+          </div>
+          <button class="btn btn-primary" onclick="quickReset()" style="width:fit-content;">Reset Database Now</button>
+        </div>
+
+        <div style="background:var(--surface-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px; display:flex; flex-direction:column; gap:10px;">
+          <h3 style="font-size:15px; font-weight:800;">System Parameters</h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:13px;">
+            <div><strong>Database Engine:</strong> SQLite 3 (WAL Mode)</div>
+            <div><strong>Busy Timeout:</strong> 5,000 milliseconds</div>
+            <div><strong>Concurrency Model:</strong> Thread-safe synchronous def (FastAPI)</div>
+            <div><strong>Safety Threshold:</strong> OCR & Field Confidence &ge; 0.80</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- Floating Toast Notification -->
+<div id="toast-notification">Notification message</div>
+
+<script>
+  // Global State
+  const state = {
+    currentActor: 'pharmacist_a',
+    currentActorLabel: 'Pharmacist A',
+    currentView: 'overview',
+    currentDiscrepancyId: null,
+    queue: [],
+    patients: [
+      { id: 1, name: 'Ravi', scenario: 'Constraint 12: Metformin Dose Conflict (ABSTAIN)' },
+      { id: 2, name: 'Meera', scenario: 'Safety Boundary: Missing Amlodipine (ABSTAIN)' },
+      { id: 3, name: 'Arjun', scenario: 'Brand Match (Glycomet) & Intentional Change (READY)' },
+      { id: 4, name: 'Sunita', scenario: 'Constraint 9: Concurrent Claim Contention & Dedup' }
+    ],
+    pollTimer: null,
+    activeDiscrepancyDetail: null
+  };
+
+  // Escape text before it goes into innerHTML: fact values, notes, actor names and
+  // drug names all come from users or uploaded documents.
+  function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+    ));
+  }
+
+  const FACT_LABELS = {
+    effective_date_a: 'Clinic Record Date (YYYY-MM-DD)',
+    effective_date_b: 'Hospital Prescription Date (YYYY-MM-DD)',
+    change_reason: 'Reason for the Change',
+    stop_reason: 'Reason Medicine was Omitted',
+    current_intake: 'Whether Patient is Still Taking It',
+    same_or_separate: 'Same or Separate Prescription',
+    legible_source: 'Legible Source Confirmation'
+  };
+  function friendlyFact(name) {
+    return FACT_LABELS[name] || name.replace(/_/g, ' ');
+  }
+
+  function newKey() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'key-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+  }
+
+  // One Idempotency-Key per click. It is kept until the server answers, so a retry
+  // of the same request after a network failure reuses the same key.
+  const pendingKeys = new Map();
+  let inFlight = 0;
+  let auditBrokenId = null;
+
+  function setBusy(busy) {
+    document.querySelectorAll('button').forEach(button => {
+      if (busy) {
+        button.dataset.wasDisabled = button.disabled ? '1' : '';
+        button.disabled = true;
+      } else if (button.dataset.wasDisabled !== undefined) {
+        button.disabled = button.dataset.wasDisabled === '1';
+        delete button.dataset.wasDisabled;
+      }
+    });
+  }
+
+  async function withBusy(task) {
+    if (inFlight++ === 0) setBusy(true);
+    try {
+      return await task();
+    } finally {
+      if (--inFlight === 0) setBusy(false);
+    }
+  }
+
+  // Reusable API fetcher: sends X-Actor on every request and a fresh Idempotency-Key on every write.
+  async function api(path, options = {}) {
+    const headers = { ...(options.headers || {}) };
+    if (!headers['X-Actor']) headers['X-Actor'] = state.currentActor;
+    const isPost = (options.method || 'GET').toUpperCase() === 'POST';
+    let signature = null;
+    if (isPost && !path.startsWith('/admin') && !headers['Idempotency-Key']) {
+      signature = `${headers['X-Actor']}|${path}|${options.body || ''}`;
+      if (!pendingKeys.has(signature)) pendingKeys.set(signature, newKey());
+      headers['Idempotency-Key'] = pendingKeys.get(signature);
+    }
+    const send = async () => {
+      const res = await fetch(path, { ...options, headers });
+      if (signature) pendingKeys.delete(signature); // answered, so this click is finished
+      let data = null;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        data = await res.text();
+      }
+      return { status: res.status, ok: res.ok, data, headers: res.headers };
+    };
+    return isPost ? withBusy(send) : send();
+  }
+
+  // Toast Notification helper
+  function showToast(msg, duration = 3200) {
+    const toast = document.getElementById('toast-notification');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), duration);
+  }
+
+  // View Navigation
+  function navigateTo(viewId) {
+    state.currentView = viewId;
+    document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active-view'));
+    const target = document.getElementById(`view-${viewId}`);
+    if (target) target.classList.add('active-view');
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.view === viewId);
+    });
+
+    const titles = {
+      'overview': ['Medication Reconciliation', 'Safe handover & clinical discrepancy review workspace'],
+      'queue': ['Review Queue', 'Differences between clinic prescriptions and hospital discharge'],
+      'discrepancy': ['Discrepancy Investigation', 'Side-by-side evidence inspection & decision gate'],
+      'patients': ['Patient Directory', '4 clinical scenarios designed for verification'],
+      'documents': ['Document Repository', 'UTF-8 clinical extraction & natural uniqueness (SHA-256)'],
+      'patient-view': ['Patient Handover View', 'Constraint 12 safety boundary: unverified doses are hidden'],
+      'audit': ['Cryptographic Audit Log', 'Tamper-evident SHA-256 hash chaining verification'],
+      'concurrency': ['Concurrency Lab', 'Live browser Promise.all stress test of Constraint 9'],
+      'settings': ['System Settings & Admin', 'Environment configuration and seed database reset']
+    };
+
+    if (titles[viewId]) {
+      document.getElementById('page-title').textContent = titles[viewId][0];
+      document.getElementById('page-subtitle').textContent = titles[viewId][1];
+    }
+
+    if (viewId === 'patient-view') loadPatientView();
+    if (viewId === 'documents') loadDocumentsView();
+    if (viewId === 'concurrency') populateLabSelects();
+    if (viewId === 'audit') loadAuditTable();
+  }
+
+  // Quick fill helper for the demo
+  function quickFillFact(name, value, source) {
+    const factSelect = document.getElementById('input-fact-name');
+    if ([...factSelect.options].some(o => o.value === name)) {
+      factSelect.value = name;
+    }
+    document.getElementById('input-fact-value').value = value;
+    document.getElementById('input-fact-source').value = source;
+    showToast(`Autofilled '${name}'! Click 'Save & Unlock' now.`);
+  }
+
+  // Polling Queue (Every 2s)
+  async function pollQueue() {
+    if (inFlight > 0) return;
+    if (state.currentView === 'audit') loadAuditTable();
+    try {
+      const res = await api('/queue');
+      if (res.ok && Array.isArray(res.data)) {
+        state.queue = res.data;
+        updateQueueUI();
+        updateOverviewUI();
+        updateLabSelects();
+
+        // If currently in discrepancy view, refresh it quietly
+        if (state.currentView === 'discrepancy' && state.currentDiscrepancyId) {
+          loadDiscrepancyDetail(state.currentDiscrepancyId, false);
+        }
+      }
+    } catch (e) {
+      console.warn('Queue poll failed:', e);
+    }
+  }
+
+  // Update Overview Dashboard
+  function updateOverviewUI() {
+    document.getElementById('stat-active-count').textContent = state.queue.length;
+    const abstainCount = state.queue.filter(q => q.gate_decision === 'ABSTAIN').length;
+    const resolvedCount = state.queue.filter(q => q.status === 'resolved').length;
+    document.getElementById('stat-abstain-count').textContent = abstainCount;
+    document.getElementById('stat-resolved-count').textContent = resolvedCount;
+    document.getElementById('badge-queue-count').textContent = state.queue.filter(q => q.status !== 'resolved').length;
+
+    // Overview queue table
+    const qTbody = document.getElementById('overview-queue-tbody');
+    const priorityItems = state.queue.slice(0, 5);
+    if (priorityItems.length === 0) {
+      qTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:16px; color:var(--text-muted);">No items in queue</td></tr>';
+    } else {
+      qTbody.innerHTML = priorityItems.map(item => `
+        <tr>
+          <td><strong style="text-transform:capitalize;">${esc(item.drug_norm)}</strong></td>
+          <td>${esc(item.patient_name)} (P${item.patient_id})</td>
+          <td>
+            <span class="badge ${item.gate_decision === 'READY' ? 'badge-ready' : 'badge-abstain'}">
+              ${item.gate_decision === 'READY' ? 'Ready to Approve' : 'Needs Doctor Date/Reason'}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="openDiscrepancy(${item.id})">Review Now</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Overview patients table
+    const pTbody = document.getElementById('overview-patients-tbody');
+    pTbody.innerHTML = state.patients.map(p => {
+      const pItems = state.queue.filter(q => q.patient_id === p.id);
+      const hasAbstain = pItems.some(q => q.gate_decision === 'ABSTAIN');
+      const isResolved = pItems.length > 0 && pItems.every(q => q.status === 'resolved');
+      let statusBadge = `<span class="badge badge-open">In Review</span>`;
+      if (hasAbstain) statusBadge = `<span class="badge badge-abstain">Doctor Clarification Needed</span>`;
+      else if (isResolved) statusBadge = `<span class="badge badge-resolved">Safe & Verified</span>`;
+
+      return `
+        <tr>
+          <td><strong>${p.name}</strong> <span style="font-size:11px; color:var(--text-muted);">(Patient #${p.id})</span></td>
+          <td>2 prescriptions</td>
+          <td>${statusBadge}</td>
+          <td><button class="btn btn-outline btn-sm" onclick="openPatientWorkspace(${p.id})">Open Workspace</button></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Update Review Queue Table
+  function updateQueueUI() {
+    const tbody = document.getElementById('queue-table-body');
+    const filterStatus = document.getElementById('filter-queue-status').value;
+    const filterPatient = document.getElementById('filter-queue-patient').value;
+
+    let filtered = state.queue.filter(item => {
+      if (filterStatus === 'open' && item.status !== 'open') return false;
+      if (filterStatus === 'claimed' && item.status !== 'claimed') return false;
+      if (filterStatus === 'resolved' && item.status !== 'resolved') return false;
+      if (filterStatus === 'ABSTAIN' && item.gate_decision !== 'ABSTAIN') return false;
+      if (filterStatus === 'READY' && item.gate_decision !== 'READY') return false;
+      if (filterPatient !== 'all' && item.patient_id !== parseInt(filterPatient)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">No medication differences match your filter.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(item => {
+      const gateBadge = item.gate_decision === 'READY' 
+        ? `<span class="badge badge-ready">READY TO APPROVE</span>`
+        : `<span class="badge badge-abstain">NEEDS DOCTOR DATE/REASON</span>`;
+
+      let claimBadge = `<span class="badge badge-open">Unassigned</span>`;
+      let claimActionBtn = `<button class="btn btn-primary btn-sm" onclick="claimItem(${item.id})">Take Responsibility (Claim)</button>`;
+
+      if (item.status === 'claimed') {
+        const isMine = item.claimed_by === state.currentActor;
+        claimBadge = `<span class="badge badge-claimed">${isMine ? 'Assigned to You' : 'Assigned to ' + esc(item.claimed_by)}</span>`;
+        if (isMine) {
+          claimActionBtn = `<button class="btn btn-primary btn-sm" onclick="openDiscrepancy(${item.id})">Continue Review</button>`;
+        } else {
+          claimActionBtn = `<button class="btn btn-outline btn-sm" disabled title="Held by ${esc(item.claimed_by)}">Locked by Other</button>`;
+        }
+      } else if (item.status === 'resolved') {
+        claimBadge = `<span class="badge badge-resolved">Approved</span>`;
+        claimActionBtn = `<button class="btn btn-outline btn-sm" onclick="openDiscrepancy(${item.id})">View Result</button>`;
+      }
+
+      // Friendly change description
+      const changeDesc = {
+        'DOSE_CONFLICT': 'Dose Changed',
+        'FREQUENCY_CONFLICT': 'Frequency Changed',
+        'ROUTE_CONFLICT': 'Route Changed',
+        'MISSING': 'Medicine Omitted',
+        'DUPLICATE': 'Duplicate Entry',
+        'UNREADABLE': 'Unreadable Text'
+      }[item.type] || item.type;
+
+      return `
+        <tr>
+          <td><span class="badge badge-code">#${item.id}</span></td>
+          <td><strong>${esc(item.patient_name)}</strong> (P${item.patient_id})</td>
+          <td><strong style="text-transform:capitalize;">${esc(item.drug_norm)}</strong></td>
+          <td><span class="badge badge-open">${changeDesc}</span></td>
+          <td>${gateBadge}</td>
+          <td>${claimBadge}</td>
+          <td style="display:flex; gap:6px;">
+            ${claimActionBtn}
+            <button class="btn btn-outline btn-sm" onclick="openDiscrepancy(${item.id})">Inspect</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Claim an item
+  async function claimItem(discrepancyId) {
+    const res = await api(`/discrepancies/${discrepancyId}/claim`, { method: 'POST' });
+    if (res.status === 200) {
+      showToast(`Success! You have taken responsibility for item #${discrepancyId}.`);
+      pollQueue();
+      openDiscrepancy(discrepancyId);
+    } else if (res.status === 409) {
+      showToast(`Conflict: Already claimed by ${res.data.current_state ? res.data.current_state.claimed_by : 'another user'}.`);
+      pollQueue();
+    } else {
+      showToast(`Claim failed: ${res.data.message || 'Error'}`);
+    }
+  }
+
+  // Quick claim button on active discrepancy
+  async function claimActiveItem() {
+    if (!state.currentDiscrepancyId) return;
+    await claimItem(state.currentDiscrepancyId);
+  }
+
+  // Open Detailed Discrepancy Investigation
+  async function openDiscrepancy(id) {
+    state.currentDiscrepancyId = id;
+    navigateTo('discrepancy');
+    await loadDiscrepancyDetail(id, true);
+  }
+
+  async function loadDiscrepancyDetail(id, scrollUp = true) {
+    const res = await api(`/discrepancies/${id}`);
+    if (!res.ok) {
+      showToast(`Could not load discrepancy #${id}`);
+      return;
+    }
+    const d = res.data;
+    state.activeDiscrepancyDetail = d;
+
+    // Header info
+    document.getElementById('disc-header-title').textContent = `${d.drug_norm.toUpperCase()} Difference`;
+    document.getElementById('disc-header-type-badge').textContent = d.type.replace('_', ' ');
+    document.getElementById('disc-header-patient-info').textContent = `Patient #${d.patient_id} • Status: ${d.status.toUpperCase()} • Version: ${d.version}`;
+    document.getElementById('disc-classification-badge').textContent = d.classification === 'intentional_change' ? 'Intentional Doctor Change' : 'Unexplained Change';
+
+    const isMine = d.claimed_by === state.currentActor && d.status === 'claimed';
+    const isUnclaimed = d.status === 'open';
+    const isResolved = d.status === 'resolved';
+
+    // Step Bar Update
+    const stepBox1 = document.getElementById('step-box-1');
+    const stepBox2 = document.getElementById('step-box-2');
+    const stepBox3 = document.getElementById('step-box-3');
+    const stepNum1 = document.getElementById('step-num-1');
+    const stepNum2 = document.getElementById('step-num-2');
+    const stepNum3 = document.getElementById('step-num-3');
+
+    if (isUnclaimed) {
+      stepBox1.className = 'step-box active';
+      stepBox2.className = 'step-box';
+      stepBox3.className = 'step-box';
+      stepNum1.textContent = '1';
+      stepNum2.textContent = '2';
+      stepNum3.textContent = '3';
+    } else if (d.gate.decision === 'ABSTAIN') {
+      stepBox1.className = 'step-box completed';
+      stepBox2.className = 'step-box active';
+      stepBox3.className = 'step-box';
+      stepNum1.textContent = '✓';
+      stepNum2.textContent = '2';
+      stepNum3.textContent = '3';
+    } else if (isResolved) {
+      stepBox1.className = 'step-box completed';
+      stepBox2.className = 'step-box completed';
+      stepBox3.className = 'step-box completed';
+      stepNum1.textContent = '✓';
+      stepNum2.textContent = '✓';
+      stepNum3.textContent = '✓';
+    } else {
+      // READY
+      stepBox1.className = 'step-box completed';
+      stepBox2.className = 'step-box completed';
+      stepBox3.className = 'step-box active';
+      stepNum1.textContent = '✓';
+      stepNum2.textContent = '✓';
+      stepNum3.textContent = '3';
+    }
+
+    // Claim actions banner
+    const claimBox = document.getElementById('disc-claim-actions-box');
+    const warningBanner = document.getElementById('unclaimed-warning-banner');
+    const factInputsRow = document.getElementById('fact-inputs-row');
+    const submitFactBtn = document.getElementById('btn-submit-fact');
+
+    if (isUnclaimed) {
+      claimBox.innerHTML = `
+        <button class="btn btn-primary" onclick="claimActiveItem()">
+          👉 Take Responsibility (Claim Case)
+        </button>
+      `;
+      warningBanner.style.display = 'flex';
+      submitFactBtn.disabled = true;
+      submitFactBtn.title = "Take responsibility for this case first.";
+    } else if (d.status === 'claimed') {
+      warningBanner.style.display = 'none';
+      submitFactBtn.disabled = !isMine;
+
+      claimBox.innerHTML = `
+        <span class="badge badge-claimed" style="padding:7px 14px; font-size:13px;">
+          ${isMine ? 'Assigned to You (' + esc(state.currentActor) + ')' : 'Assigned to ' + esc(d.claimed_by)}
+        </span>
+        ${!isMine ? '<span style="font-size:12px; color:var(--danger-red); font-weight:700;">(Locked for other users)</span>' : ''}
+      `;
+    } else {
+      warningBanner.style.display = 'none';
+      submitFactBtn.disabled = true;
+      claimBox.innerHTML = `<span class="badge badge-resolved" style="padding:7px 14px; font-size:13px;">✓ Approved & Resolved</span>`;
+    }
+
+    // Populate Record A
+    if (d.entry_a) {
+      document.getElementById('entry-a-facility-badge').textContent = d.entry_a.facility || 'Clinic';
+      document.getElementById('entry-a-drug').textContent = d.entry_a.drug_raw;
+      document.getElementById('entry-a-date').textContent = d.entry_a.effective_date || '(None Recorded)';
+      document.getElementById('entry-a-dose').textContent = `${d.entry_a.dose || '--'} ${d.entry_a.unit || ''}`;
+      document.getElementById('entry-a-freq-route').textContent = `${d.entry_a.frequency_per_day ? d.entry_a.frequency_per_day + ' times daily' : '--'} (${d.entry_a.route || 'oral'})`;
+      document.getElementById('entry-a-prescriber').textContent = d.entry_a.prescriber || '--';
+      document.getElementById('entry-a-confidence').textContent = `${Math.round(d.entry_a.confidence * 100)}% Matched`;
+      document.getElementById('entry-a-snippet').textContent = d.entry_a.source_snippet;
+    } else {
+      document.getElementById('entry-a-drug').textContent = '(None - Missing from earlier prescription)';
+    }
+
+    // Populate Record B
+    if (d.entry_b) {
+      document.getElementById('entry-b-facility-badge').textContent = d.entry_b.facility || 'Discharge';
+      document.getElementById('entry-b-drug').textContent = d.entry_b.drug_raw;
+      document.getElementById('entry-b-date').textContent = d.entry_b.effective_date || '⚠️ Date Missing!';
+      document.getElementById('entry-b-dose').textContent = `${d.entry_b.dose || '--'} ${d.entry_b.unit || ''}`;
+      document.getElementById('entry-b-freq-route').textContent = `${d.entry_b.frequency_per_day ? d.entry_b.frequency_per_day + ' times daily' : '--'} (${d.entry_b.route || 'oral'})`;
+      document.getElementById('entry-b-prescriber').textContent = d.entry_b.prescriber || '--';
+      document.getElementById('entry-b-confidence').textContent = `${Math.round(d.entry_b.confidence * 100)}% Matched`;
+      document.getElementById('entry-b-snippet').textContent = d.entry_b.source_snippet;
+
+      // Highlight difference on Record B dose if DOSE_CONFLICT
+      if (d.type === 'DOSE_CONFLICT') {
+        document.getElementById('entry-b-dose').classList.add('highlight-diff');
+      } else {
+        document.getElementById('entry-b-dose').classList.remove('highlight-diff');
+      }
+    } else {
+      document.getElementById('entry-b-drug').textContent = '(Omitted from hospital record)';
+      document.getElementById('entry-b-date').textContent = '--';
+      document.getElementById('entry-b-dose').textContent = '--';
+      document.getElementById('entry-b-freq-route').textContent = '--';
+      document.getElementById('entry-b-prescriber').textContent = '--';
+      document.getElementById('entry-b-confidence').textContent = '--';
+      document.getElementById('entry-b-snippet').textContent = 'Medicine was absent in discharge document.';
+    }
+
+    // GATE DECISION (Constraint 12)
+    const gate = d.gate;
+    const banner = document.getElementById('gate-decision-banner');
+    const statusText = document.getElementById('gate-banner-status-text');
+    const badgePill = document.getElementById('gate-badge-pill');
+    const missingDesc = document.getElementById('gate-missing-facts-desc');
+    const questionContainer = document.getElementById('gate-question-container');
+    const questionText = document.getElementById('gate-question-text');
+    const resolutionLockBadge = document.getElementById('resolution-lock-badge');
+
+    if (gate.decision === 'READY') {
+      banner.className = 'gate-banner ready';
+      statusText.textContent = 'Safety Gate: READY (All Required Doctor Facts Confirmed)';
+      badgePill.className = 'badge badge-ready';
+      badgePill.textContent = 'READY TO APPROVE';
+      missingDesc.innerHTML = 'All required facts are present. Choose an action below. The system does not pick one for you.';
+      questionContainer.style.display = 'none';
+      document.getElementById('box-add-fact').style.display = 'none';
+      resolutionLockBadge.style.background = '#ECFDF5';
+      resolutionLockBadge.style.color = '#065F46';
+      resolutionLockBadge.textContent = 'Unlocked (Ready for Decision)';
+    } else {
+      banner.className = 'gate-banner abstain';
+      statusText.textContent = 'Safety Gate: ABSTAIN (Approval Blocked)';
+      badgePill.className = 'badge badge-abstain';
+      badgePill.textContent = 'APPROVAL BLOCKED';
+      
+      const missingFriendly = gate.missing.map(m => esc(friendlyFact(m))).join(', ');
+
+      missingDesc.innerHTML = `To prevent medical errors, the system refuses to guess. Missing: <strong>${missingFriendly}</strong>`;
+      questionContainer.style.display = 'flex';
+      questionText.textContent = gate.question || 'A critical fact must be clarified before approval actions can be unlocked.';
+      document.getElementById('box-add-fact').style.display = 'flex';
+      resolutionLockBadge.style.background = '#FEF2F2';
+      resolutionLockBadge.style.color = '#991B1B';
+      resolutionLockBadge.textContent = 'Locked until Step 2 is Complete';
+
+      // Auto-select the first missing fact in dropdown if available
+      if (gate.missing && gate.missing.length > 0) {
+        const factSelect = document.getElementById('input-fact-name');
+        for (const m of gate.missing) {
+          if (![...factSelect.options].some(o => o.value === m)) factSelect.add(new Option(friendlyFact(m), m));
+        }
+        if ([...factSelect.options].some(o => o.value === gate.missing[0])) {
+          factSelect.value = gate.missing[0];
+        }
+      }
+    }
+
+    // RESOLUTION BUTTONS
+    const btnContainer = document.getElementById('resolution-buttons-container');
+    const isReady = gate.decision === 'READY';
+    const canResolve = isMine && isReady;
+
+    const isMissingType = d.type === 'MISSING';
+    const doseText = entry => (entry ? `${entry.dose} ${entry.unit || ''}` : '');
+    const labelB = isMissingType ? 'Confirm removed from list' : `Accept hospital record B (${esc(doseText(d.entry_b))})`;
+    const labelA = isMissingType ? 'Keep on list' : `Accept clinic record A (${esc(doseText(d.entry_a))})`;
+    const candidates = Object.fromEntries((gate.candidate_actions || []).map(c => [c.action, c]));
+    const allowed = new Set(gate.safe_actions || []);
+    const missingText = (gate.missing || []).map(friendlyFact).join(', ');
+    const acceptButton = (action, label, cls) => {
+      const candidate = candidates[action];
+      const enabled = isMine && isReady && allowed.has(action);
+      let reason = '';
+      if (!candidate) reason = 'Does not apply to this item';
+      else if (isResolved) reason = 'Already resolved';
+      else if (!isReady) reason = 'Unselected. Missing: ' + missingText;
+      else if (!isMine) reason = 'Claim this item first';
+      return `<button class="btn ${cls}" ${enabled ? '' : 'disabled'} title="${esc(reason)}" onclick="submitResolution('${action}')">${label}${candidate && !enabled ? ' <span style="font-size:11px; opacity:.85;">(unselected)</span>' : ''}</button>`;
+    };
+    btnContainer.innerHTML = `
+      ${acceptButton('accept_b', labelB, 'btn-success')}
+      ${acceptButton('accept_a', labelA, 'btn-outline')}
+      ${acceptButton('both_valid', 'Both records valid', 'btn-outline')}
+      <button class="btn btn-outline" ${!isMine || isResolved ? 'disabled' : ''} onclick="submitResolution('request_fact')">Request fact (ask prescriber)</button>
+      <button class="btn btn-outline" ${!isMine || isResolved ? 'disabled' : ''} onclick="submitResolution('escalate')">Escalate</button>
+      <button class="btn btn-outline" ${!isMine || isResolved ? 'disabled' : ''} onclick="submitResolution('keep_pending')">Keep pending</button>
+      ${isReady ? '' : `<div style="flex-basis:100%; font-size:12.5px; font-weight:700; color:#991B1B;">Cannot decide: missing ${esc(missingText)}. The accept options are shown for transparency only; none is selected.</div>`}
+    `;
+
+    // History log
+    const histContainer = document.getElementById('discrepancy-history-log');
+    let histHTML = '';
+    if (d.facts && d.facts.length > 0) {
+      histHTML += d.facts.map(f => `
+        <div style="background:#fff; border:1px solid var(--border-subtle); padding:8px 12px; border-radius:6px;">
+          <span class="badge badge-ready">FACT ADDED</span>
+          <strong>${esc(friendlyFact(f.name))}</strong>: "<em>${esc(f.value)}</em>" (Source: ${esc(f.source)}) by <strong>${esc(f.added_by)}</strong>
+        </div>
+      `).join('');
+    }
+    if (d.resolutions && d.resolutions.length > 0) {
+      histHTML += d.resolutions.map(r => `
+        <div style="background:#fff; border:1px solid var(--border-subtle); padding:8px 12px; border-radius:6px;">
+          <span class="badge badge-resolved">DECISION TAKEN</span>
+          <strong>${esc(r.action)}</strong> by <strong>${esc(r.actor)}</strong>: ${esc(r.note || 'No notes')} <span style="color:var(--text-muted); font-size:11px;">(${new Date(r.created_at).toLocaleTimeString()})</span>
+        </div>
+      `).join('');
+    }
+    histContainer.innerHTML = histHTML || '<div style="color:var(--text-muted);">No doctor clarifications added yet.</div>';
+
+    if (scrollUp) {
+      document.querySelector('.main-content').scrollTop = 0;
+    }
+  }
+
+  // Submit missing fact (Constraint 12)
+  document.getElementById('btn-submit-fact').addEventListener('click', async () => {
+    if (!state.currentDiscrepancyId) return;
+    const name = document.getElementById('input-fact-name').value;
+    const value = document.getElementById('input-fact-value').value.trim();
+    const source = document.getElementById('input-fact-source').value.trim();
+
+    if (!value || !source) {
+      showToast('Please provide both doctor answer and verified source.');
+      return;
+    }
+
+    const payload = { name, value, source };
+    const res = await api(`/discrepancies/${state.currentDiscrepancyId}/facts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      showToast(`Fact '${name}' added! Safety Gate re-evaluated.`);
+      document.getElementById('input-fact-value').value = '';
+      document.getElementById('input-fact-source').value = '';
+      await loadDiscrepancyDetail(state.currentDiscrepancyId, false);
+      pollQueue();
+    } else {
+      showToast(`Error: ${res.data.message || 'Could not add fact'}`);
+    }
+  });
+
+  // Submit resolution (Constraint 9 version check & Constraint 12 gate validation)
+  async function submitResolution(action) {
+    if (!state.activeDiscrepancyDetail) return;
+    const d = state.activeDiscrepancyDetail;
+    const note = document.getElementById('input-resolution-note').value.trim() || undefined;
+
+    const payload = {
+      action: action,
+      expected_version: d.version,
+      note: note
+    };
+
+    const res = await api(`/discrepancies/${d.id}/resolve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      showToast(`Success! Decision recorded: ${action}! Version is now ${res.data.version}.`);
+      document.getElementById('input-resolution-note').value = '';
+      await loadDiscrepancyDetail(d.id, false);
+      pollQueue();
+    } else if (res.status === 422) {
+      showToast(`Blocked (422): ${res.data.message || 'Cannot resolve while Gate says ABSTAIN'}`);
+    } else if (res.status === 409) {
+      showToast(`Conflict (409): ${res.data.message || 'Stale version or not claimed'}`);
+      await loadDiscrepancyDetail(d.id, false);
+    } else {
+      showToast(`Error: ${res.data.message || 'Resolution failed'}`);
+    }
+  }
+
+  // Patient Workspace
+  function openPatientWorkspace(patientId) {
+    document.getElementById('filter-queue-patient').value = patientId;
+    navigateTo('queue');
+    updateQueueUI();
+  }
+
+  // Load Patient View (Constraint 12 safety boundary)
+  async function loadPatientView() {
+    const patientId = document.getElementById('patient-view-select').value;
+    const patient = state.patients.find(p => p.id === parseInt(patientId));
+    document.getElementById('pv-patient-name').textContent = `${patient ? patient.name : 'Patient'}'s Medication Handover List`;
+    document.getElementById('pv-patient-sub').textContent = `Patient Identifier: #${patientId}`;
+
+    const container = document.getElementById('patient-view-meds-container');
+    container.innerHTML = '<div style="color:var(--text-muted); padding:20px;">Loading patient view...</div>';
+
+    const seq = (loadPatientView.seq = (loadPatientView.seq || 0) + 1);
+    const res = await api(`/patients/${patientId}/patient-view`);
+    if (seq !== loadPatientView.seq) return; // a newer request replaced this one
+    if (!res.ok) {
+      container.innerHTML = `<div style="color:var(--danger-red);">Failed to load patient view.</div>`;
+      return;
+    }
+
+    const meds = res.data.medicines || [];
+    if (meds.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); padding:20px;">No medication records found.</div>';
+      return;
+    }
+
+    const frequencyText = n => ({ 1: 'once daily', 2: 'twice daily', 3: 'thrice daily' }[n] || `${n} times a day`);
+    const recordLine = r => `<li>${esc(r.name)}: ${esc(r.dose)} ${esc(r.unit)}, ${esc(frequencyText(r.frequency_per_day))}, ${esc(r.route || 'route not stated')} <span style="color:var(--text-muted);">(${esc(r.facility || 'unknown source')}, ${esc(r.doc_date || 'no date')})</span></li>`;
+    container.innerHTML = meds.map(med => {
+      const name = `<strong style="font-size:15px; text-transform:capitalize;">${esc(med.medicine)}</strong>`;
+      if (med.status === 'Unresolved') {
+        return `
+          <div style="background:#fff; border:1px solid var(--warning-amber-border); border-left:4px solid var(--warning-amber); border-radius:var(--radius-sm); padding:16px 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              ${name}
+              <span class="badge badge-abstain">Unresolved</span>
+            </div>
+            <div style="margin-top:8px; font-size:13.5px; color:var(--warning-amber-text); font-weight:700;">${esc(med.message)}</div>
+          </div>
+        `;
+      }
+      const records = med.records || [];
+      const list = records.length ? `<ul style="margin:6px 0 0 18px;">${records.map(recordLine).join('')}</ul>` : '';
+      const message = med.message ? `<div style="margin-top:8px; font-size:13.5px; color:var(--text-secondary);">${esc(med.message)}</div>` : '';
+      if (med.status === 'Pending') {
+        return `
+          <div style="background:#fff; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:16px 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              ${name}
+              <span class="badge badge-open">Pending</span>
+            </div>
+            <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">Records on file, not yet reviewed:${list}</div>
+          </div>
+        `;
+      }
+      return `
+        <div style="background:#fff; border:1px solid var(--success-green-border); border-left:4px solid var(--success-green); border-radius:var(--radius-sm); padding:16px 20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            ${name}
+            <span class="badge badge-ready">Verified</span>
+          </div>
+          <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${records.length ? 'As recorded in your documents:' : ''}${list}</div>
+          ${message}
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.getElementById('patient-view-select').addEventListener('change', loadPatientView);
+
+  // Documents View
+  async function loadDocumentsView() {
+    document.getElementById('upload-doc-content').value = 
+`Facility: City Hospital
+Type: discharge
+Date: 2026-07-01
+Prescriber: Dr Iyer
+MED: Telmisartan | 80 mg | once daily | oral | 2026-07-01 | dose increased per cardiology review`;
+
+    const tbody = document.getElementById('documents-table-body');
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">Loading records...</td></tr>';
+    
+    let allEntries = [];
+    const seenDocs = new Set();
+    for (const p of state.patients) {
+      const res = await api(`/patients/${p.id}/compare`);
+      if (res.ok && res.data.drugs) {
+        for (const d of res.data.drugs) {
+          for (const e of d.entries) {
+            if (seenDocs.has(e.document_id)) continue;
+            seenDocs.add(e.document_id);
+            allEntries.push({ ...e, patient_name: p.name });
+          }
+        }
+      }
+    }
+
+    if (allEntries.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No documents recorded</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = allEntries.map(e => `
+      <tr>
+        <td><strong>${esc(e.patient_name)}</strong> (doc #${esc(e.document_id)})</td>
+        <td>${esc(e.facility || 'Clinic')}</td>
+        <td>${esc(e.doc_date || e.effective_date || '--')}</td>
+        <td>${esc(e.prescriber || 'Staff')}</td>
+      </tr>
+    `).join('');
+  }
+
+  // Upload Document
+  document.getElementById('btn-upload-document').addEventListener('click', async () => {
+    const patientId = document.getElementById('upload-doc-patient').value;
+    const content = document.getElementById('upload-doc-content').value.trim();
+    if (!content) {
+      showToast('Please provide prescription text.');
+      return;
+    }
+
+    const res = await api(`/patients/${patientId}/documents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: content
+    });
+
+    if (res.status === 201) {
+      showToast(`Document uploaded successfully! (Doc ID #${res.data.document_id})`);
+      loadDocumentsView();
+      pollQueue();
+    } else if (res.status === 200 && res.data.duplicate) {
+      showToast(`Natural Uniqueness: Duplicate document detected (SHA-256 matched ID #${res.data.document_id}).`);
+    } else {
+      showToast(`Upload failed: ${res.data.message || 'Error'}`);
+    }
+  });
+
+  // Verify Audit Chain
+  document.getElementById('btn-verify-audit').addEventListener('click', async () => {
+    const banner = document.getElementById('audit-verification-banner');
+    banner.style.display = 'block';
+    banner.style.background = 'var(--surface-subtle)';
+    banner.style.border = '1px solid var(--border-subtle)';
+    banner.style.color = 'var(--text-main)';
+    banner.textContent = 'Verifying the hash chain...';
+
+    const res = await api('/audit/verify');
+    if (res.ok && res.data.valid) {
+      auditBrokenId = null;
+      banner.style.background = 'var(--success-green-bg)';
+      banner.style.border = '1px solid var(--success-green-border)';
+      banner.style.color = 'var(--success-green-text)';
+      banner.textContent = 'Chain valid: every row\u2019s hash matches its content and the row before it.';
+    } else {
+      auditBrokenId = res.data ? res.data.first_broken_id : null;
+      banner.style.background = 'var(--danger-red-bg)';
+      banner.style.border = '1px solid var(--danger-red-border)';
+      banner.style.color = 'var(--danger-red-text)';
+      banner.textContent = `Chain broken: the first bad row is #${auditBrokenId ?? 'unknown'}.`;
+    }
+    loadAuditTable();
+  });
+
+  // Audit log table, newest first
+  async function loadAuditTable() {
+    const tbody = document.getElementById('audit-log-tbody');
+    const res = await api('/audit?limit=300');
+    if (!res.ok || !Array.isArray(res.data)) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--danger-red);">Could not load the audit log.</td></tr>';
+      return;
+    }
+    if (res.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No audit entries yet. Claim or resolve something.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = res.data.map(row => {
+      const broken = auditBrokenId !== null && row.id === auditBrokenId;
+      const badge = /rejected|blocked|reused/.test(row.action) ? 'badge-abstain' : (/replay|duplicate/.test(row.action) ? 'badge-open' : 'badge-ready');
+      const details = row.payload.length > 180 ? row.payload.slice(0, 180) + '\u2026' : row.payload;
+      return `
+        <tr${broken ? ' style="background:var(--danger-red-bg);"' : ''}>
+          <td>#${row.id} \u00b7 ${esc(new Date(row.ts).toLocaleTimeString())}</td>
+          <td><span class="badge badge-code">${esc(row.actor)}</span></td>
+          <td><span class="badge ${badge}">${esc(row.action)}</span></td>
+          <td>${esc(row.entity)}</td>
+          <td style="font-family:var(--font-mono); font-size:11.5px; word-break:break-all;" title="hash ${esc(row.hash)}">${esc(details)}${broken ? ' \u26a0 chain broken here' : ''}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // CONCURRENCY LAB (Constraint 9 live demo)
+  function populateLabSelects() {
+    updateLabSelects();
+  }
+
+  function labOption(item) {
+    const holder = item.claimed_by ? `, held by ${item.claimed_by}` : '';
+    return `<option value="${item.id}">Item #${item.id}: ${esc(item.drug_norm)} (${esc(item.patient_name)}, ${esc(item.status)}${esc(holder)})</option>`;
+  }
+
+  function updateLabSelects() {
+    const lists = [
+      ['lab-claim-target', q => q.status === 'open'],
+      ['lab-idemp-target', q => q.status !== 'resolved' && (!q.claimed_by || q.claimed_by === 'pharmacist_a')]
+    ];
+    for (const [id, keep] of lists) {
+      const select = document.getElementById(id);
+      if (!select) continue;
+      const chosen = select.value; // the list refreshes every 2 seconds, so keep the user's choice
+      select.innerHTML = state.queue.filter(keep).map(labOption).join('') || '<option value="">No suitable item. Click Reset Test Data.</option>';
+      if ([...select.options].some(o => o.value === chosen)) select.value = chosen;
+    }
+  }
+
+  function labCount(id) {
+    const n = parseInt(document.getElementById(id).value, 10);
+    return Number.isFinite(n) ? Math.min(Math.max(n, 2), 200) : 20;
+  }
+
+  // Test 1: N simultaneous claims from N different actors
+  async function runClaimLab() {
+    const targetId = document.getElementById('lab-claim-target').value;
+    if (!targetId) {
+      showToast('No open item to claim. Click Reset Test Data first.');
+      return;
+    }
+    const n = labCount('lab-claim-n');
+    const logEl = document.getElementById('term-claim-log');
+    logEl.textContent = `Sending ${n} claims for item #${targetId} at once with Promise.all...`;
+
+    await withBusy(async () => {
+      const started = performance.now();
+      const results = await Promise.all(Array.from({ length: n }, async (_, i) => {
+        const actor = `user_${i + 1}`;
+        try {
+          const res = await fetch(`/discrepancies/${targetId}/claim`, {
+            method: 'POST',
+            headers: { 'X-Actor': actor, 'Idempotency-Key': newKey() }
+          });
+          let body = {};
+          try { body = await res.json(); } catch (e) { /* not JSON */ }
+          return { actor, status: res.status, body };
+        } catch (e) {
+          return { actor, status: 0, body: { message: String(e) } };
+        }
+      }));
+      const ms = Math.round(performance.now() - started);
+      const won = results.filter(r => r.status === 200);
+      const blocked = results.filter(r => r.status === 409);
+      const other = results.length - won.length - blocked.length;
+      const pass = won.length === 1 && blocked.length === n - 1;
+      const lines = [
+        `${pass ? 'PASS' : 'CHECK'}: ${won.length} x 200, ${blocked.length} x 409${other ? `, ${other} other` : ''} in ${ms} ms.`,
+        `WINNER: ${won.length ? won[0].actor : 'nobody (the item was already claimed)'}`,
+        ''
+      ];
+      for (const r of results) {
+        lines.push(r.status === 200 ? `[200] ${r.actor} claimed it (version ${r.body.version})`
+          : r.status === 409 ? `[409] ${r.actor} rejected: ${r.body.code}`
+          : `[${r.status}] ${r.actor}: ${r.body.message || JSON.stringify(r.body)}`);
+      }
+      logEl.textContent = lines.join('\n');
+      document.getElementById('meter-claim-total').textContent = results.length;
+      document.getElementById('meter-claim-success').textContent = won.length;
+      document.getElementById('meter-claim-conflict').textContent = blocked.length;
+    });
+    pollQueue();
+  }
+  document.getElementById('btn-run-simultaneous-claims').addEventListener('click', runClaimLab);
+
+  // Test 2: claim once as pharmacist_a, then send the same resolve N times with the same key
+  async function runIdempotencyLab() {
+    const targetId = document.getElementById('lab-idemp-target').value;
+    if (!targetId) {
+      showToast('No suitable item. Click Reset Test Data first.');
+      return;
+    }
+    const n = labCount('lab-idemp-n');
+    const logEl = document.getElementById('term-idemp-log');
+    logEl.textContent = `Claiming item #${targetId} as pharmacist_a, then sending the same resolve ${n} times with one key...`;
+
+    await withBusy(async () => {
+      const readItem = async () => (await fetch(`/discrepancies/${targetId}`)).json();
+      const before = await readItem();
+      const claimRes = await fetch(`/discrepancies/${targetId}/claim`, {
+        method: 'POST',
+        headers: { 'X-Actor': 'pharmacist_a', 'Idempotency-Key': newKey() }
+      });
+      const claim = await claimRes.json();
+      if (claimRes.status !== 200) {
+        logEl.textContent = `STOPPED: the claim returned ${claimRes.status} (${claim.code}). Pick another item or click Reset Test Data.`;
+        return;
+      }
+      const key = newKey();
+      const body = JSON.stringify({ action: 'keep_pending', expected_version: claim.version, note: 'Concurrency Lab: identical submission' });
+      const started = performance.now();
+      const results = await Promise.all(Array.from({ length: n }, async () => {
+        const res = await fetch(`/discrepancies/${targetId}/resolve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Actor': 'pharmacist_a', 'Idempotency-Key': key },
+          body
+        });
+        return { status: res.status, replay: res.headers.get('Idempotent-Replay') === 'true', text: await res.text() };
+      }));
+      const ms = Math.round(performance.now() - started);
+      const after = await readItem();
+      const identical = results.filter(r => r.status === results[0].status && r.text === results[0].text).length;
+      const replays = results.filter(r => r.replay).length;
+      const created = after.resolutions.length - before.resolutions.length;
+      const pass = identical === n && created === 1;
+      logEl.textContent = [
+        `${pass ? 'PASS' : 'CHECK'}: ${identical} of ${n} responses identical, ${replays} marked Idempotent-Replay, in ${ms} ms.`,
+        `Resolution rows now: ${after.resolutions.length} (this run created ${created}).`,
+        '',
+        `Response: HTTP ${results[0].status} ${results[0].text}`
+      ].join('\n');
+      document.getElementById('meter-idemp-total').textContent = n;
+      document.getElementById('meter-idemp-first').textContent = identical;
+      document.getElementById('meter-idemp-replays').textContent = after.resolutions.length;
+    });
+    pollQueue();
+  }
+  document.getElementById('btn-run-idempotency-test').addEventListener('click', runIdempotencyLab);
+
+  // Fast Reset DB function
+  async function quickReset() {
+    const res = await api('/admin/reset', { method: 'POST' });
+    if (res.ok) {
+      auditBrokenId = null;
+      showToast('Database reset to fresh seed state.');
+      await pollQueue();
+      if (state.currentView === 'discrepancy' && state.currentDiscrepancyId) {
+        loadDiscrepancyDetail(state.currentDiscrepancyId, false);
+      }
+    } else {
+      showToast('Database reset failed.');
+    }
+  }
+  document.getElementById('btn-quick-reset').addEventListener('click', quickReset);
+
+  // Actor Selector Event
+  document.getElementById('actor-select').addEventListener('change', (e) => {
+    state.currentActor = e.target.value;
+    const names = { 'pharmacist_a': 'PA', 'pharmacist_b': 'PB', 'clinician': 'CL' };
+    document.getElementById('actor-avatar').textContent = names[state.currentActor] || 'MD';
+    showToast(`Switched active user to: ${e.target.options[e.target.selectedIndex].text}`);
+    pollQueue();
+    if (state.currentView === 'discrepancy' && state.currentDiscrepancyId) {
+      loadDiscrepancyDetail(state.currentDiscrepancyId, false);
+    }
+  });
+
+  // Navigation Items click
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      navigateTo(item.dataset.view);
+    });
+  });
+
+  // Filter change events
+  document.getElementById('filter-queue-status').addEventListener('change', updateQueueUI);
+  document.getElementById('filter-queue-patient').addEventListener('change', updateQueueUI);
+
+  // Initial Startup
+  (async function init() {
+    await pollQueue();
+    state.pollTimer = setInterval(pollQueue, 2000);
+  })();
+</script>
+</body>
+</html>
