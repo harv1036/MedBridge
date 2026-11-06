@@ -7,10 +7,10 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
 import seed
-from app import audit
-from app.compare import compare_report
+from app import audit, gate
+from app.compare import compare_report, patient_view
 from app.db import connect
-from app.extract import ingest_document, parse_document
+from app.extract import ingest_document, parse_date, parse_document
 from app.idempotency import RequestInfo, error_body, run_idempotent
 
 router = APIRouter()
@@ -168,6 +168,15 @@ def resolve_discrepancy(conn, actor, discrepancy_id, body):
         return reject(409, "STALE_VERSION", f"This item is at version {state['version']}, not {expected_version}.")
     if state["status"] != "claimed":
         return reject(409, "NOT_CLAIMED", "This item is already resolved.")
+    if action in RESOLVING_ACTIONS:
+        result = gate.evaluate(conn, discrepancy_id)
+        if result["decision"] == "ABSTAIN":
+            current = {**state, "missing": result["missing"]}
+            audit.append(conn, actor, "resolve_blocked", entity, {"action": action, "current_state": current})
+            needed = ", ".join(result["missing"])
+            return 422, error_body("BLOCKED_MISSING_FACT", f"Cannot {action} yet. Missing: {needed}.", current)
+        if action not in result["safe_actions"]:
+            return reject(422, "INVALID_REQUEST", f"{action} does not apply to this item.")
 
     resolution_id = conn.execute(
         "INSERT INTO resolutions (discrepancy_id, action, actor, note, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -190,6 +199,113 @@ def resolve(discrepancy_id: int, request: Request, body: bytes = Depends(read_bo
         body,
         lambda conn, actor: resolve_discrepancy(conn, actor, discrepancy_id, body),
     )
+
+
+# ----- Facts -----
+
+
+def parse_fact_body(body):
+    """Return (name, value, source), or None unless all three are non-blank text."""
+    try:
+        data = json.loads(body)
+    except ValueError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    fields = [data.get("name"), data.get("value"), data.get("source")]
+    if not all(isinstance(field, str) and field.strip() for field in fields):
+        return None
+    return tuple(field.strip() for field in fields)
+
+
+def add_fact(conn, actor, discrepancy_id, body):
+    entity = f"discrepancy:{discrepancy_id}"
+    state = current_state(conn, discrepancy_id)
+
+    def reject(status_code, code, message):
+        audit.append(conn, actor, "fact_rejected", entity, {"code": code, "current_state": state})
+        return status_code, error_body(code, message, state)
+
+    parsed = parse_fact_body(body)
+    if parsed is None:
+        return reject(422, "INVALID_REQUEST", "Send JSON with name, value and source, none of them blank.")
+    name, value, source = parsed
+    if name.startswith("effective_date") and not parse_date(value):
+        return reject(422, "INVALID_REQUEST", "An effective date must be a real date written as YYYY-MM-DD.")
+    if state is None:
+        return reject(404, "NOT_FOUND", f"Discrepancy {discrepancy_id} does not exist.")
+    if state["claimed_by"] != actor or state["status"] != "claimed":
+        return reject(409, "NOT_CLAIMED", "Hold the claim on an unresolved item to add a fact.")
+
+    conn.execute(
+        "INSERT INTO facts (discrepancy_id, name, value, source, added_by) VALUES (?, ?, ?, ?, ?)",
+        (discrepancy_id, name, value, source, actor),
+    )
+    conn.execute("UPDATE discrepancies SET version = version + 1 WHERE id = ?", (discrepancy_id,))
+    result = gate.store_decision(conn, discrepancy_id)
+    version = state["version"] + 1
+    audit.append(
+        conn, actor, "fact_added", entity,
+        {"name": name, "value": value, "source": source, "actor": actor, "decision": result["decision"], "version": version},
+    )
+    return 200, {**result, "version": version}
+
+
+@router.post("/discrepancies/{discrepancy_id}/facts")
+def facts(discrepancy_id: int, request: Request, body: bytes = Depends(read_body)):
+    return run_write(
+        request,
+        "POST /discrepancies/{id}/facts",
+        discrepancy_id,
+        f"discrepancy:{discrepancy_id}",
+        body,
+        lambda conn, actor: add_fact(conn, actor, discrepancy_id, body),
+    )
+
+
+# ----- Reading -----
+
+
+@router.get("/queue")
+def queue():
+    with closing(connect()) as conn:
+        rows = conn.execute(
+            "SELECT x.id, x.patient_id, p.name AS patient_name, x.type, x.drug_norm, x.classification, x.status,"
+            " x.version, x.claimed_by FROM discrepancies x JOIN patients p ON p.id = x.patient_id ORDER BY x.id"
+        ).fetchall()
+        items = []
+        for row in rows:
+            result = gate.evaluate(conn, row["id"])
+            items.append({**dict(row), "gate_decision": result["decision"], "missing": result["missing"], "question": result["question"]})
+        return items
+
+
+@router.get("/discrepancies/{discrepancy_id}")
+def discrepancy_detail(discrepancy_id: int):
+    with closing(connect()) as conn:
+        row = conn.execute(
+            "SELECT id, patient_id, type, drug_norm, entry_a_id, entry_b_id, classification, status, version, claimed_by"
+            " FROM discrepancies WHERE id = ?",
+            (discrepancy_id,),
+        ).fetchone()
+        if row is None:
+            return error(404, "NOT_FOUND", f"Discrepancy {discrepancy_id} does not exist.")
+        return {
+            **dict(row),
+            "gate": gate.evaluate(conn, discrepancy_id),
+            "entry_a": gate.load_entry(conn, row["entry_a_id"]),
+            "entry_b": gate.load_entry(conn, row["entry_b_id"]),
+            "facts": [dict(fact) for fact in conn.execute("SELECT * FROM facts WHERE discrepancy_id = ? ORDER BY id", (discrepancy_id,))],
+            "resolutions": [dict(item) for item in conn.execute("SELECT * FROM resolutions WHERE discrepancy_id = ? ORDER BY id", (discrepancy_id,))],
+        }
+
+
+@router.get("/patients/{patient_id}/patient-view")
+def get_patient_view(patient_id: int):
+    with closing(connect()) as conn:
+        if not patient_exists(conn, patient_id):
+            return error(404, "NOT_FOUND", f"Patient {patient_id} does not exist.")
+        return patient_view(conn, patient_id)
 
 
 # ----- Audit and admin -----

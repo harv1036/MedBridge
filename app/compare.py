@@ -1,6 +1,12 @@
 """Compare one patient's documents with plain rules. Nothing here decides which record is right."""
 import hashlib
+import json
 import re
+
+from app import gate
+
+UNRESOLVED_TEXT = "Needs verification with your doctor or pharmacist"
+REVIEWED_TEXT = "Reviewed by your care team. Please talk to your doctor or pharmacist about this medicine."
 
 # Whole words, so a note saying "unchanged" does not count as "changed".
 INTENTIONAL_WORDS = re.compile(r"\b(increased|decreased|changed|switched|stopped)\b", re.IGNORECASE)
@@ -80,9 +86,74 @@ def compare_report(conn, patient_id):
             {"drug_norm": drug, "entries": [dict(entry) for entry in drug_entries]}
             for drug, drug_entries in sorted(groups.items())
         ],
-        "discrepancies": [dict(row) for row in discrepancies],
+        "discrepancies": [
+            {**dict(row), "missing_facts": json.loads(row["missing_facts"] or "[]")} for row in discrepancies
+        ],
         "matched_by_generic": notes,
     }
+
+
+def entries_kept_after_review(conn, entries, discrepancies):
+    """The records the reviewers accepted. The system never picks; with no discrepancy, every record stands."""
+    if not discrepancies:
+        return entries
+    kept = set()
+    for discrepancy in discrepancies:
+        decision = conn.execute(
+            "SELECT action FROM resolutions WHERE discrepancy_id = ? AND action IN ('accept_a', 'accept_b', 'both_valid')"
+            " ORDER BY id DESC LIMIT 1",
+            (discrepancy["id"],),
+        ).fetchone()
+        if decision["action"] in ("accept_a", "both_valid"):
+            kept.add(discrepancy["entry_a_id"])
+        if decision["action"] in ("accept_b", "both_valid"):
+            kept.add(discrepancy["entry_b_id"])
+    return [entry for entry in entries if entry["id"] in kept]
+
+
+def has_unreliable_entry(entries):
+    return any(
+        entry["confidence"] < gate.MIN_CONFIDENCE or None in (entry["dose"], entry["unit"], entry["frequency_per_day"])
+        for entry in entries
+    )
+
+
+def view_medicine(conn, drug, entries, discrepancies):
+    still_open = [row for row in discrepancies if row["status"] != "resolved"]
+    if any(row["gate_decision"] != "READY" for row in still_open) or (not discrepancies and has_unreliable_entry(entries)):
+        return {"medicine": drug, "status": "Unresolved", "message": UNRESOLVED_TEXT}
+    # Pending shows every record: choosing the newest would assume it is correct.
+    status, shown = ("Pending", entries) if still_open else ("Verified", entries_kept_after_review(conn, entries, discrepancies))
+    medicine = {
+        "medicine": drug,
+        "status": status,
+        "records": [
+            {
+                "name": entry["drug_raw"],
+                "dose": entry["dose"],
+                "unit": entry["unit"],
+                "frequency_per_day": entry["frequency_per_day"],
+                "route": entry["route"],
+                "facility": entry["facility"],
+                "doc_date": entry["doc_date"],
+            }
+            for entry in shown
+        ],
+    }
+    if not shown:
+        medicine["message"] = REVIEWED_TEXT
+    return medicine
+
+
+def patient_view(conn, patient_id):
+    """What a patient may see. It never picks a dose for an open item or tells anyone to change anything."""
+    medicines = []
+    for drug, entries in sorted(group_by_drug(load_entries(conn, patient_id)).items()):
+        discrepancies = conn.execute(
+            "SELECT * FROM discrepancies WHERE patient_id = ? AND drug_norm = ?", (patient_id, drug)
+        ).fetchall()
+        medicines.append(view_medicine(conn, drug, entries, discrepancies))
+    return {"patient_id": patient_id, "medicines": medicines}
 
 
 def compare_patient(conn, patient_id):
@@ -96,9 +167,11 @@ def compare_patient(conn, patient_id):
             fingerprint = hashlib.sha256(
                 f"{patient_id}|{kind}|{drug}|{a['id']}|{'' if entry_b_id is None else entry_b_id}".encode("utf-8")
             ).hexdigest()
-            conn.execute(
+            inserted = conn.execute(
                 "INSERT OR IGNORE INTO discrepancies (patient_id, type, drug_norm, entry_a_id, entry_b_id,"
                 " classification, fingerprint) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (patient_id, kind, drug, a["id"], entry_b_id, classify(b), fingerprint),
             )
+            if inserted.rowcount == 1:
+                gate.store_decision(conn, inserted.lastrowid)
     return compare_report(conn, patient_id)
