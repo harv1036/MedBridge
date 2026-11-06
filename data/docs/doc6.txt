@@ -1,0 +1,6 @@
+Facility: City Hospital
+Type: discharge
+Date: 2026-06-01
+Prescriber: Dr Iyer
+MED: Metformin | 500 mg | twice daily | oral | 2026-06-01 |
+MED: Atorvastatin | 20 mg | once daily | oral | 2026-06-01 | increased after LDL review

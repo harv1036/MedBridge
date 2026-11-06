@@ -1,0 +1,5 @@
+Facility: Sunrise Clinic
+Type: clinic
+Date: 2026-02-10
+Prescriber: Dr Rao
+MED: Telmisartan | 40 mg | once daily | oral | 2026-02-10 |

@@ -1,0 +1,5 @@
+Facility: City Hospital
+Type: discharge
+Date: 2026-04-20
+Prescriber: Dr Iyer
+MED: Metformin | 1000 mg | twice daily | oral |  |

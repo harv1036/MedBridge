@@ -1,0 +1,5 @@
+Facility: City Hospital
+Type: discharge
+Date: 2026-05-05
+Prescriber: Dr Iyer
+MED: Pantoprazole | 40 mg | once daily | oral | 2026-05-05 |

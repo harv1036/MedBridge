@@ -1,0 +1,6 @@
+Facility: Sunrise Clinic
+Type: clinic
+Date: 2026-01-15
+Prescriber: Dr Rao
+MED: Glycomet | 500 mg | twice daily | oral | 2026-01-15 |
+MED: Atorvastatin | 10 mg | once daily | oral | 2026-01-15 |

@@ -1,0 +1,5 @@
+Facility: Sunrise Clinic
+Type: clinic
+Date: 2026-03-03
+Prescriber: Dr Rao
+MED: Metformin | 500 mg | twice daily | oral | 2026-03-03 |

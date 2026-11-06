@@ -1,0 +1,5 @@
+Facility: City Hospital
+Type: discharge
+Date: 2026-05-02
+Prescriber: Dr Iyer
+MED: Telmisartan | 80 mg | once daily | oral | 2026-05-02 | dose increased per cardiology review

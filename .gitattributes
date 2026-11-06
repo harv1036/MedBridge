@@ -1,0 +1,3 @@
+# Source data stays byte-exact on every checkout: a document's sha256 depends on it.
+data/docs/*.txt -text
+data/drug_master.csv -text
