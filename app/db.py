@@ -1,9 +1,12 @@
 """SQLite access: one connection per request, WAL mode, explicit write transactions."""
+import os
 import sqlite3
+import threading
 from contextlib import contextmanager
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data" / "medbridge.db"
+# The tests set MEDBRIDGE_DB so they never touch the demo data.
+DB_PATH = Path(os.environ.get("MEDBRIDGE_DB") or Path(__file__).resolve().parent.parent / "data" / "medbridge.db")
 
 # Parents before children: created in this order, dropped in reverse.
 TABLES = {
@@ -117,19 +120,27 @@ def connect():
     return conn
 
 
+# SQLite's wait for the write lock is polling, so under sustained load an unlucky request can
+# lose every poll and fail with "database is locked" after busy_timeout. Writers in this process
+# queue here instead. BEGIN IMMEDIATE and busy_timeout still protect against other processes.
+_write_queue = threading.Lock()
+
+
 @contextmanager
 def transaction():
     """Yield a connection inside BEGIN IMMEDIATE and commit when the block ends.
 
     If the block raises, COMMIT never runs and closing the connection rolls back.
+    Do not nest these: the inner one would wait forever for the outer one to finish.
     """
-    conn = connect()
-    try:
-        conn.execute("BEGIN IMMEDIATE")
-        yield conn
-        conn.execute("COMMIT")
-    finally:
-        conn.close()
+    with _write_queue:
+        conn = connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            yield conn
+            conn.execute("COMMIT")
+        finally:
+            conn.close()
 
 
 def create_tables(conn):
